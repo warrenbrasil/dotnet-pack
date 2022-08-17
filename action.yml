@@ -1,0 +1,40 @@
+name: "Warren - .NET Pack and Push"
+description: "Pack and publish .NET packages to GitHub Packages"
+branding:
+  icon: "package"
+  color: "red"
+inputs:
+  solution:
+    description: "Solution file name without the .sln extension"
+    required: true
+  project:
+    description: "Projects file name without the .nupkg extension"
+    required: true
+  pkg-version-suffix:
+    description: "The version suffix command with value"
+    required: true
+  nuget-source-name:
+    description: "The nuget source to publish the package (configured by dotnet-config action)"
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Build
+      shell: bash
+      env:
+        SOLUTION: ${{ inputs.solution }}
+      run: dotnet build $SOLUTION.sln -c Release
+
+    - name: Pack Projects
+      shell: bash
+      env:
+        SOLUTION: ${{ inputs.solution }}
+        PKG_VERSION_SUFFIX: ${{ inputs.pkg-version-suffix }}
+      run: dotnet pack $SOLUTION.sln $PKG_VERSION_SUFFIX -c Release
+
+    - name: Push Packages
+      shell: bash
+      env:
+        PROJECT: ${{ inputs.project }}
+        NUGET_SOURCE_NAME: ${{ inputs.nuget-source-name }}
+      run: dotnet nuget push "**/$PROJECT*.nupkg" -s $NUGET_SOURCE_NAME --skip-duplicate
